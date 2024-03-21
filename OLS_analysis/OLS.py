@@ -17,10 +17,11 @@ class OLS():
         rss = np.sum(residual_array**2)
         tss = np.sum((y_train - np.mean(y_train))**2)
         self.R2 = 1 - (rss / tss)
+        self.d_freedom = X_train.shape[0] - X_train.shape[1]
+
+        self.adj_R2 = 1 - ((1-self.R2)*(X_train.shape[0] - 1))/(self.d_freedom- 1)
 
         #Find the statistics of the regression
-
-        self.d_freedom = X_train.shape[0] - X_train.shape[1]
 
         sigma = rss / self.d_freedom
         self.coeff_standard_errors = (sigma**0.5)*(np.diag(np.linalg.inv(X_train.T @ X_train))**0.5)
