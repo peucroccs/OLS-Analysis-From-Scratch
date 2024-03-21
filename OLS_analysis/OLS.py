@@ -1,33 +1,43 @@
 import numpy as np 
 import pandas as pd 
 from sklearn.model_selection import train_test_split
+from scipy.stats import t
 
-WineQualityDf = pd.read_csv("../data/WineQualityDf_cleaned.csv")
-WineQualityDf = WineQualityDf.drop("Unnamed: 0", axis=1)
+class OLS():
+    def fit(self, X_train, y_train):
+        #Initiate dataset
+        self.X_train = X_train
+        self.y_train = y_train
 
-X_matrix = WineQualityDf.drop("quality", axis=1).to_numpy()
-y = WineQualityDf["quality"].to_numpy()
+        #Find the coefficients and R2
+        self.coefficients = (np.linalg.inv(X_train.T @ X_train)) @ X_train.T @ y_train
+        prediction_values = X_train @ self.coefficients
+        residual_array = y_train - prediction_values
 
-X_train, X_test, y_train, y_test = train_test_split(X_matrix, y, test_size=0.2, random_state=62)
+        rss = np.sum(residual_array**2)
+        tss = np.sum((y_train - np.mean(y_train))**2)
+        self.R2 = 1 - (rss / tss)
 
-#Adding intercept
-ones_column_train = np.ones(X_train.shape[0])
-ones_column_train = ones_column_train.reshape((X_train.shape[0],1))
-X_train = np.hstack((ones_column_train, X_train))
+        #Find the statistics of the regression
 
-ones_column_test = np.ones(X_test.shape[0])
-ones_column_test = ones_column_test.reshape((X_test.shape[0],1))
-X_test = np.hstack((ones_column_test, X_test))
+        self.d_freedom = X_train.shape[0] - X_train.shape[1]
 
-#Coefficient_matrix
+        sigma = rss / self.d_freedom
+        self.coeff_standard_errors = (sigma**0.5)*(np.diag(np.linalg.inv(X_train.T @ X_train))**0.5)
 
-alpha = (np.linalg.inv(X_train.T @ X_train)) @ X_train.T @ y_train
+        self.t_scores = self.coefficients / self.coeff_standard_errors
 
-pred_values = np.array(list((map(round, X_test @ alpha))))
-error = np.array(list(map(bool, pred_values - y_test)))
-error = np.array(list(map(int, ~error)))
+        p_values = []
+        for t_v in self.t_scores:
+            p = 2*(1-t.cdf(np.abs(t_v), self.d_freedom))
+            p_values.append(p)
+        self.p_values = np.array(p_values)
 
-accuracy = sum(error) / len(error)
-
-print(f"Model Accuracy = {accuracy * 100:.2f}%")
-
+    def predict(self, X):
+        return X @ self.coefficients
+    
+    def summary(self):
+        print("OLS Regression Results")
+        print(f"Name | Coeff Value | C_ste | t | p")
+        for i in range(len(self.coefficients)):
+            print(f"Beta{i} | {self.coefficients[i]} | {self.coeff_standard_errors[i]} | {self.t_scores[i]} | {self.p_values[i]}")
