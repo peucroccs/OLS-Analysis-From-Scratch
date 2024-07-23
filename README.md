@@ -30,4 +30,6 @@ The results can be seen in the end of the file OLS_analysis.ipynb, as well as al
 
 ![Example Image](OLS_analysis/output.png)
 
+Adjusted R Squared = 0.6654
 
+RMSE = 8.5166
